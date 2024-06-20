@@ -1,0 +1,187 @@
+---
+title: "Hw3 for ANA 515"
+author: "Pin-Chieh Huang"
+date: "2024-06-20"
+output:
+ 
+  word_document: word_document
+  html_document: html_document
+---
+
+Describe Data:
+
+The database I am using is from United Airlines how much they spent on each department every year based on wide and narrow body aircraft. The data is stored as an Excel file. As we know most of data is about the money and number,so the data type is binary. In order to have perfect number, we need to  remove n/a row and convert the scientific number. In the report, we will see only summary and clean data from our file. 
+
+```{r section 2~3, include = FALSE}
+#install.packages("tidyverse")
+#install.packages("readxl")
+#install.packages("dplyr")
+library(tidyverse)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+
+library(magrittr)
+
+united <- read_xls("United Airlines Aircraft Operating Statistics- Actuals.xls")
+united
+united1 <-united[-1,-1] # remove the first row and first column because of n/a value
+colnames(united1) <- united1[1,] # to see the first row which is years
+united2 <- united1[-1,] # remove the first now because we want to bring the first row (year) as head 
+united2 <- na.omit(united2) #remove the rows with n/a
+united3 <- subset(united1,select = c("year","2013","2014","2015"))
+```
+
+
+
+We have data about `r nrow(united3)` factories such as how much they spent on pilot, HR, aircrafts  and so on . The distribution of this is shown below: The data is about 2013,2014 and 2015 how much united airlines spent on the each fleet and pilot the `1column(united3)`is the data of 2013 and the `2column(united3)`is the data of 2014 and `3column(united3)`is the data of 2015
+
+
+```{r section4, include=FALSE}
+united2 <- subset(united1,select = c("year","2014","2015")) #subset 2014 and 2015 columns 
+options(scipen = 999) #  to turn off scientific notation
+
+united2 <- na.omit(united2) #remove the rows with n/a
+print(kable(united2)) # the total costs in 2014 and 2015 from united differetn departments 
+united2
+```
+
+```{r section5, eval=FALSE, include=FALSE}
+united3 <- subset(united1,select = c("year","2013","2014","2015")) #subset 2013, 2014 and 2015 columns 
+options(scipen = 999) #  to turn off scientific notation
+
+united3 <- na.omit(united3) #remove the rows with n/a
+print(kable(united3))
+united3
+united3_firstcolumn = united3[-1,+1]
+united3_firstcolumn
+colnames(united3_firstcolumn)<-c("category")
+new_numited <- cbind(united3_firstcolumn, united3_1)
+```
+
+
+```{r echo=FALSE, comment=NA}
+
+#install.packages("reshape2")
+library(reshape2)
+united3 <- subset(united1,select = c("year","2013","2014","2015")) #subset 2013, 2014 and 2015 columns 
+options(scipen = 999) #  to turn off scientific notation
+
+united3 <- na.omit(united3) #remove the rows with n/a
+
+filterdate<-( filter(united3,year == "Small Narrowbodies" | year == "Total Fleet" ))
+filterdate<-t(filterdate)
+
+
+data <- data.frame(
+  year = c(2013, 2014, 2015),
+  total_fleet = c(17157931, 16996369, 13876654),
+  Small_Narrowbodies = c(3296735, 3200531, 2409722))
+data$year <- as.numeric(as.character(data$year))
+# Plot the data
+ggplot(data, aes(x = as.factor(year), y = total_fleet)) +
+  geom_line(group = 1) +  # Added group = 1 for proper line plot
+  geom_point() +
+  geom_text(aes(label = total_fleet), vjust = -0.5) +
+  labs(title = "Total Fleet Over the Years",
+       x = "Year",
+       y = "how much united spent on total Fleet") +
+  scale_x_discrete(breaks = c(2013, 2014, 2015)) +  # Ensure only the years are shown
+  theme_minimal()
+
+# Reshape the data for the second plot
+data_long <- melt(data, id = "year")
+
+# Plot both total fleet and small narrowbodies over the years with points and data labels
+ggplot(data_long, aes(x = year, y = value, color = variable)) +
+  geom_line() +
+  geom_point() +
+  geom_text(aes(label = value), vjust = -0.5) +
+  labs(title = "Fleet Data Over the Years",
+       x = "Year",
+       y = "how much united spent on samll aircraft",
+       color = "Category") +
+  scale_x_continuous(breaks = c(2013, 2014, 2015)) +  # Ensure only the years are shown
+  theme_minimal()
+
+```
+
+```{r eval=FALSE, comment=NA, include=FALSE}
+# Load necessary libraries
+library(ggplot2)
+library(reshape2)
+
+# Create the data frame
+data <- data.frame(
+  year = c(2013, 2014, 2015),
+  total_fleet = c(17157931, 16996369, 13876654),
+  small_narrowbodies = c(3296735, 3200531, 2409722),
+  widebody = c(7045375,	7158573, 5930869
+)
+)
+
+data$total_fleet_pct_diff <- c(NA, diff(data$total_fleet) / head(data$total_fleet, -1) * 100)
+data$small_narrowbodies_pct_diff <- c(NA, diff(data$small_narrowbodies) / head(data$small_narrowbodies, -1) * 100)
+
+# Melt the data to long format for plotting
+data_long <- melt(data, id = "year", measure.vars = c("total_fleet", "small_narrowbodies"))
+
+# Melt the percentage difference data to long format for plotting
+data_pct_diff_long <- melt(data, id = "year", measure.vars = c("total_fleet_pct_diff", "small_narrowbodies_pct_diff"))
+
+# Plot the data
+p1 <- ggplot(data_long, aes(x = year, y = value, color = variable)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Fleet Data Over the Years",
+       x = "Year",
+       y = "Count",
+       color = "Category") +
+  theme_minimal()
+
+# Plot the percentage difference data
+p2 <- ggplot(data_pct_diff_long, aes(x = year, y = value, color = variable)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Percentage Difference Over the Years",
+       x = "Year",
+       y = "Percentage Difference",
+       color = "Category") +
+  theme_minimal()
+
+# Print the plots
+p1
+p2
+
+ggplot(data = data, mapping = aes(x =year , colour = widebody)) +
+  geom_freqpoly(binwidth = 0.1)
+
+```
+
+
+
+
+```{r pilot, echo=FALSE, message=FALSE}
+library(data.table)
+long <- melt(setDT(united3), id.vars = c("year"), variable.name = "year_new") #reshap dataframe
+long
+
+long$year_new <- as.numeric(as.character(long$year_new)) # Convert the year column to numeric
+
+
+
+filtered_data_second <- long %>%
+  filter( year_new >= 2013 & year== "Pilot Training (000)" | year=="Pilots (000)")
+
+filtered_data_second
+
+ggplot(filtered_data_second, aes(x = (year_new), y = value, fill = year)) +
+  geom_bar(stat = "identity") +
+  labs(title = "how much unied spent on pilot",
+       x = "Year",
+       y = "$$",
+       fill = "$$") +
+  theme_minimal()
+
+```
